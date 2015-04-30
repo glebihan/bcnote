@@ -18,9 +18,11 @@
 # You should have received a copy of the GNU General Public License
 # along with BCNote.  If not, see <http://www.gnu.org/licenses/>.
 
+from EvernoteClient import EvernoteClient
+
 class Application(object):
     def __init__(self):
-        pass
+        self._evernote_client = EvernoteClient()
     
     def run(self):
         pass
