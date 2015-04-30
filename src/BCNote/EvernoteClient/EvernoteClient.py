@@ -28,6 +28,20 @@ import os
 from gi.repository import GLib
 from ..informations import *
 
+DATATYPES_TO_SYNC = ["notebook"]
+SYNC_FIELDS = {
+    "notebook": [
+        "guid",
+        "name",
+        "updateSequenceNum",
+        "defaultNotebook",
+        "serviceCreated",
+        "serviceUpdated",
+        "published",
+        "stack"
+    ]
+}
+
 class EvernoteClient(EventsObject):
     def __init__(self, **kwargs):
         EventsObject.__init__(self)
@@ -76,10 +90,32 @@ class EvernoteClient(EventsObject):
         if data:
             res = data["value"]
             if type(default) == int:
-                res = int(default)
+                res = int(res)
             return res
         else:
             return default
+    
+    def _set_global_data(self, key, value):
+        self._db.simple_replace("global_data", {"key": key, "value": value})
+        
+    def _store_new_item(self, dataType, item):
+        logging.debug("EvernoteClient::_store_new_item")
+        
+        insertData = {}
+        for i in SYNC_FIELDS[dataType]:
+            insertData[i] = getattr(item, i)
+        self._db.simple_insert(dataType + "s", insertData)
+    
+    def _update_local_item(self, dataType, localItem, remoteItem):
+        logging.debug("EvernoteClient::_update_local_item")
+        
+        updateData = {}
+        for i in SYNC_FIELDS[dataType]:
+            updateData[i] = getattr(remoteItem, i)
+        self._db.simple_update(dataType + "s", updateData, {"localId": localItem["localId"]})
+    
+    def _find_local_match(self, dataType, remoteItem):
+        return self._db.simple_select_one(dataType + "s", {"guid": remoteItem.guid})
     
     @async_method(None)
     def sync(self):
@@ -94,7 +130,7 @@ class EvernoteClient(EventsObject):
             
             afterUSN = self._get_global_data("updateCount", 0)
             lastSyncTime = self._get_global_data("lastSyncTime", 0)
-            
+
             if syncState.fullSyncBefore > lastSyncTime:
                 # The server forces us to do a full sync
                 afterUSN = 0
@@ -120,6 +156,32 @@ class EvernoteClient(EventsObject):
                         continue_fetching = False
                     chunks.append(chunk)
                 logging.debug("EvernoteAccount::synchronize:chunks = %s" % chunks)
+                
+                fullRemoteGUIDList = {}
+                for dataType in DATATYPES_TO_SYNC:
+                    for chunk in chunks:
+                        items = getattr(chunk, dataType + "s")
+                        if items:
+                            for remoteItem in items:
+                                localItem = self._find_local_match(dataType, remoteItem)
+                                if localItem:
+                                    self._update_local_item(dataType, localItem, remoteItem)
+                                else:
+                                    self._store_new_item(dataType, remoteItem)
+                                fullRemoteGUIDList.setdefault(dataType, []).append(remoteItem.guid)
+                    
+                    if not fullSync:
+                        expungedData = getattr(chunk, "expunged" + dataType.capitalize() + "s")
+                        if expungedData:
+                            for expungedItem in expungedData:
+                                self._db.simple_delete(dataType + "s", {"guid": expungedItem})
+                
+                if fullSync:
+                    for dataType in fullRemoteGUIDList:
+                        self._db.cleanup_deleted(dataType + "s", fullRemoteGUIDList[dataType])
+                
+                self._set_global_data("updateCount", syncState.updateCount)
+                self._set_global_data("lastSyncTime", syncState.currentTime)
             
             # Send Changes
             needSync = False

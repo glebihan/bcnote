@@ -92,3 +92,48 @@ class LocalDb(object):
             return data[0]
         else:
             return default
+    
+    def simple_insert(self, table, data):
+        query = "INSERT INTO `%s` (%s) VALUES (%s)" % (table, ", ".join(["`" + i + "`" for i in data]), ", ".join(["?" for i in data]))
+    
+        conn = sqlite3.connect(self._dbFile)
+        cur = conn.cursor()
+        cur.execute(query, [data[i] for i in data])
+        conn.commit()
+        conn.close()
+        
+    def simple_replace(self, table, data):
+        query = "REPLACE INTO `%s` (%s) VALUES (%s)" % (table, ", ".join(["`" + i + "`" for i in data]), ", ".join(["?" for i in data]))
+    
+        conn = sqlite3.connect(self._dbFile)
+        cur = conn.cursor()
+        cur.execute(query, [data[i] for i in data])
+        conn.commit()
+        conn.close()
+        
+    def simple_update(self, table, data, conditions):
+        query = "UPDATE `%s` SET %s WHERE %s" % (table, ", ".join(["`%s` = ?" % i for i in data]), " AND ".join(["`%s` = ?" % i for i in conditions]))
+    
+        conn = sqlite3.connect(self._dbFile)
+        cur = conn.cursor()
+        cur.execute(query, [data[i] for i in data] + [conditions[i] for i in conditions])
+        conn.commit()
+        conn.close()
+    
+    def simple_delete(self, table, conditions):
+        query = "DELETE FROM `%s` WHERE %s" % (table, " AND ".join(["`%s` = ?" % i for i in conditions]))
+        
+        conn = sqlite3.connect(self._dbFile)
+        cur = conn.cursor()
+        cur.execute(query, [conditions[i] for i in conditions])
+        conn.commit()
+        conn.close()
+    
+    def cleanup_deleted(self, table, guidList):
+        query = "DELETE FROM `%s` WHERE (`dirty` = 0 OR `updateSequenceNum` != 0) AND `guid` NOT IN (%s)" % (table, ", ".join(["?" for i in guidList]))
+        
+        conn = sqlite3.connect(self._dbFile)
+        cur = conn.cursor()
+        cur.execute(query, guidList)
+        conn.commit()
+        conn.close()
