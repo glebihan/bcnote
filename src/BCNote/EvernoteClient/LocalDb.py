@@ -34,14 +34,6 @@ class LocalDb(object):
         return int(self.simple_select_one("global_data", {"key": "version"}, {"value": 0})["value"])
     version = property(_get_version)
     
-    def _get_updateCount(self):
-        return int(self.simple_select_one("global_data", {"key": "updateCount"}, {"value": 0})["value"])
-    updateCount = property(_get_updateCount)
-    
-    def _get_lastSyncTime(self):
-        return int(self.simple_select_one("global_data", {"key": "lastSyncTime"}, {"value": 0})["value"])
-    lastSyncTime = property(_get_lastSyncTime)
-    
     def _upgrade_db(self):
         logging.debug("LocalDb::_upgrade_db")
         

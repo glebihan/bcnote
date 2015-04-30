@@ -22,6 +22,7 @@ from ..EventsObject import EventsObject
 from ..ThreadWrapper import async_method
 from LocalDb import LocalDb
 import evernote.api.client
+from evernote.edam.notestore.ttypes import NoteFilter, NotesMetadataResultSpec, SyncChunkFilter
 import logging
 import os
 from gi.repository import GLib
@@ -70,6 +71,16 @@ class EvernoteClient(EventsObject):
         user = userStore.getUser()
         self._userId = user.id
     
+    def _get_global_data(self, key, default = None):
+        data = self._db.simple_select_one("global_data", {"key": key})
+        if data:
+            res = data["value"]
+            if type(default) == int:
+                res = int(default)
+            return res
+        else:
+            return default
+    
     @async_method(None)
     def sync(self):
         logging.debug("EvernoteClient::sync")
@@ -81,13 +92,34 @@ class EvernoteClient(EventsObject):
             syncState = noteStore.getSyncState()
             logging.debug("EvernoteClient::sync:syncState = %s" % syncState)
             
-            afterUSN = self._db.updateCount
-            lastSyncTime = self._db.lastSyncTime
+            afterUSN = self._get_global_data("updateCount", 0)
+            lastSyncTime = self._get_global_data("lastSyncTime", 0)
             
             if syncState.fullSyncBefore > lastSyncTime:
+                # The server forces us to do a full sync
                 afterUSN = 0
             
             fullSync = (afterUSN == 0)
+            
+            # Test if there are updates on the server
+            if afterUSN != syncState.updateCount:
+                
+                # Fetch updates from server
+                chunks = []
+                continue_fetching = True
+                
+                while continue_fetching:
+                    chunkFilter = SyncChunkFilter(
+                        includeNotebooks = True,
+                        includeExpunged = True
+                    )
+                    chunk = noteStore.getFilteredSyncChunk(afterUSN, 10, chunkFilter)
+                    if chunk.chunkHighUSN and chunk.chunkHighUSN < chunk.updateCount:
+                        afterUSN = chunk.chunkHighUSN
+                    else:
+                        continue_fetching = False
+                    chunks.append(chunk)
+                logging.debug("EvernoteAccount::synchronize:chunks = %s" % chunks)
             
             # Send Changes
             needSync = False
