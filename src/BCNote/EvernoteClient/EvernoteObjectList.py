@@ -82,3 +82,14 @@ class EvernoteObjectList(object):
         self._db.query("DELETE FROM `%(table)s` WHERE `guid` = ?" % {
             "table": self.OBJECT_CLASS.TABLE
         }, [guid])
+    
+    def get_dirty(self):
+        logging.debug("EvernoteObjectList(%s)::get_dirty" % self.OBJECT_CLASS.TABLE)
+        
+        res = []
+        for i in self._db.query("SELECT * FROM `%(table)s` WHERE `dirty` = 1" % {
+            "table": self.OBJECT_CLASS.TABLE
+        }):
+            res.append(self._get_instance(localData = i))
+        
+        return res

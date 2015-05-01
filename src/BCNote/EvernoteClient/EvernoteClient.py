@@ -35,17 +35,23 @@ DATATYPES_TO_SYNC = [
     {
         "clientProperty": "tags",
         "chunkProperty": "tags",
-        "chunkExpungedProperty": "expungedTags"
+        "chunkExpungedProperty": "expungedTags",
+        "remoteFetchMethod": "getTag",
+        "remoteUpdateMethod": "updateTag"
     },
     {
         "clientProperty": "notebooks",
         "chunkProperty": "notebooks",
-        "chunkExpungedProperty": "expungedNotebooks"
+        "chunkExpungedProperty": "expungedNotebooks",
+        "remoteFetchMethod": "getNotebook",
+        "remoteUpdateMethod": "updateNotebook"
     },
     {
         "clientProperty": "notes",
         "chunkProperty": "notes",
-        "chunkExpungedProperty": "expungedNotes"
+        "chunkExpungedProperty": "expungedNotes",
+        "remoteFetchMethod": "getNote",
+        "remoteUpdateMethod": "updateNote"
     }
 ]
 
@@ -203,5 +209,21 @@ class EvernoteClient(EventsObject):
             
             # Send Changes
             needSync = False
+            updateCount = syncState.updateCount
+            for dataType in DATATYPES_TO_SYNC:
+                localList = getattr(self, dataType["clientProperty"])
+                for i in localList.get_dirty():
+                    if i.is_new():
+                        pass
+                    else:
+                        remoteItem = getattr(noteStore, dataType["remoteFetchMethod"])(i["guid"])
+                        i.fill_remote(remoteItem)
+                        usn = getattr(noteStore, dataType["remoteUpdateMethod"])(remoteItem)
+                    if usn == updateCount + 1:
+                        updateCount = usn
+                        self._set_global_data("updateCount", updateCount)
+                    else:
+                        needSync = True
+                    i.set_dirty(False)
         
         GLib.idle_add(self._trigger, "sync_complete")

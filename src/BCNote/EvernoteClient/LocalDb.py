@@ -31,6 +31,8 @@ class LocalDb(object):
         self._upgrade_db()
     
     def query(self, *args):
+        logging.debug("LocalDb::query:%s" % str(args))
+        
         conn = self._get_connection()
         with conn:
             cur = conn.cursor()
