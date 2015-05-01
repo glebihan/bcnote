@@ -28,6 +28,11 @@ class Tag(EvernoteObject):
         "updateSequenceNum",
         "parentGuid"
     ]
+    RELATIONS = {
+        "guid": [
+            {"table": "tags", "field": "parentGuid"}
+        ]
+    }
     
     def __init__(self, client, db, localData = None, remoteObject = None):
         EvernoteObject.__init__(self, client, db, localData, remoteObject)

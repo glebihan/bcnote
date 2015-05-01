@@ -1,6 +1,5 @@
 CREATE TABLE IF NOT EXISTS `notebooks` (
-    `localId` INTEGER PRIMARY KEY AUTOINCREMENT,
-    `guid` TEXT,
+    `guid` TEXT PRIMARY KEY,
     `name` TEXT,
     `updateSequenceNum` INTEGER DEFAULT 0,
     `defaultNotebook` BOOL,
@@ -12,8 +11,7 @@ CREATE TABLE IF NOT EXISTS `notebooks` (
 );
 
 CREATE TABLE IF NOT EXISTS `tags` (
-    `localId` INTEGER PRIMARY KEY AUTOINCREMENT,
-    `guid` TEXT,
+    `guid` TEXT PRIMARY KEY,
     `name` TEXT,
     `updateSequenceNum` INTEGER DEFAULT 0,
     `parentGuid` BOOL,
@@ -21,8 +19,7 @@ CREATE TABLE IF NOT EXISTS `tags` (
 );
 
 CREATE TABLE IF NOT EXISTS `notes` (
-    `localId` INTEGER PRIMARY KEY AUTOINCREMENT,
-    `guid` TEXT,
+    `guid` TEXT PRIMARY KEY,
     `title` TEXT,
     `content` TEXT,
     `contentHash` TEXT,
@@ -30,10 +27,9 @@ CREATE TABLE IF NOT EXISTS `notes` (
     `created` INTEGER,
     `updated` INTEGER,
     `deleted` INTEGER,
-    `active` BOOL,
+    `active` BOOL DEFAULT 1,
     `updateSequenceNum` INTEGER DEFAULT 0,
     `notebookGuid` TEXT,
-    `parentGuid` BOOL,
     `dirty` BOOL DEFAULT 0
 );
 

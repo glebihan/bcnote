@@ -23,6 +23,7 @@ from ..ThreadWrapper import async_method
 from LocalDb import LocalDb
 import evernote.api.client
 from evernote.edam.notestore.ttypes import NoteFilter, NotesMetadataResultSpec, SyncChunkFilter
+from evernote.edam.type import ttypes as EvernoteTypes
 import logging
 import os
 from gi.repository import GLib
@@ -37,21 +38,27 @@ DATATYPES_TO_SYNC = [
         "chunkProperty": "tags",
         "chunkExpungedProperty": "expungedTags",
         "remoteFetchMethod": "getTag",
-        "remoteUpdateMethod": "updateTag"
+        "remoteCreateMethod": "createTag",
+        "remoteUpdateMethod": "updateTag",
+        "remoteClass": EvernoteTypes.Tag
     },
     {
         "clientProperty": "notebooks",
         "chunkProperty": "notebooks",
         "chunkExpungedProperty": "expungedNotebooks",
         "remoteFetchMethod": "getNotebook",
-        "remoteUpdateMethod": "updateNotebook"
+        "remoteCreateMethod": "createNotebook",
+        "remoteUpdateMethod": "updateNotebook",
+        "remoteClass": EvernoteTypes.Notebook
     },
     {
         "clientProperty": "notes",
         "chunkProperty": "notes",
         "chunkExpungedProperty": "expungedNotes",
         "remoteFetchMethod": "getNote",
-        "remoteUpdateMethod": "updateNote"
+        "remoteCreateMethod": "createNote",
+        "remoteUpdateMethod": "updateNote",
+        "remoteClass": EvernoteTypes.Note
     }
 ]
 
@@ -182,7 +189,6 @@ class EvernoteClient(EventsObject):
                                 localItem = localList.find_match(remoteItem)
                                 if localItem:
                                     if dataType["clientProperty"] ==  "notes" and remoteItem.contentHash != localItem["contentHash"]:
-                                        print "jdsklqjdskqlkjqd"
                                         remoteItem.content = noteStore.getNoteContent(remoteItem.guid)
                                     localItem.update_from_remote(remoteItem)
                                 else:
@@ -211,12 +217,27 @@ class EvernoteClient(EventsObject):
             needSync = False
             updateCount = syncState.updateCount
             for dataType in DATATYPES_TO_SYNC:
+                relationMap = {}
                 localList = getattr(self, dataType["clientProperty"])
                 for i in localList.get_dirty():
+                    for j in type(i).SYNC_FIELDS:
+                        if j in relationMap.setdefault(dataType["clientProperty"], {}):
+                            i[j] = relationMap[dataType["clientProperty"]][j][i[j]]
                     if i.is_new():
-                        pass
+                        remoteItem = dataType["remoteClass"]()
+                        i.fill_remote(remoteItem)
+                        newItem = getattr(noteStore, dataType["remoteCreateMethod"])(remoteItem)
+                        for relationField in type(i).RELATIONS:
+                            if getattr(newItem, relationField) != i[relationField]:
+                                for relation in type(i).RELATIONS[relationField]:
+                                    relationMap.setdefault(relation["table"], {}).setdefault(relation["field"], {})[i[relationField]] = getattr(newItem, relationField)
+                        usn = newItem.updateSequenceNum
+                        i.update_from_remote(newItem)
                     else:
-                        remoteItem = getattr(noteStore, dataType["remoteFetchMethod"])(i["guid"])
+                        if dataType["clientProperty"] ==  "notes":
+                            remoteItem = getattr(noteStore, dataType["remoteFetchMethod"])(i["guid"], False, False, False, False)
+                        else:
+                            remoteItem = getattr(noteStore, dataType["remoteFetchMethod"])(i["guid"])
                         i.fill_remote(remoteItem)
                         usn = getattr(noteStore, dataType["remoteUpdateMethod"])(remoteItem)
                     if usn == updateCount + 1:

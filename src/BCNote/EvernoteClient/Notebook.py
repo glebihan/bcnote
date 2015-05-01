@@ -32,6 +32,11 @@ class Notebook(EvernoteObject):
         "published",
         "stack"
     ]
+    RELATIONS = {
+        "guid": [
+            {"table": "notes", "field": "notebookGuid"}
+        ]
+    }
     
     def __init__(self, client, db, localData = None, remoteObject = None):
         EvernoteObject.__init__(self, client, db, localData, remoteObject)

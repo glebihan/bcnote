@@ -21,6 +21,8 @@
 import logging
 
 class EvernoteObject(object):
+    RELATIONS = {}
+    
     def __init__(self, client, db, localData = None, remoteObject = None):
         self._client = client
         self._db = db
@@ -36,10 +38,22 @@ class EvernoteObject(object):
         return self._data[key]
     
     def __setitem__(self, key, value):
+        self._db.query("UPDATE `%(table)s` SET `%(field)s` = ? WHERE `guid` = ?" % {
+            "table": self.TABLE,
+            "field": key
+        }, [value, self["guid"]])
         self._data[key] = value
     
     def update_from_remote(self, remoteObject):
         logging.debug("EvernoteObject(%s)::update_from_remote:%s" % (self.TABLE, remoteObject))
+        
+        for relationField in self.RELATIONS:
+            if getattr(remoteObject, relationField) != self[relationField]:
+                for relation in self.RELATIONS[relationField]:
+                    self._db.query("UPDATE `%(table)s` SET `%(field)s` = ? WHERE `%(field)s` = ?" % {
+                        "table": relation["table"],
+                        "field": relation["field"]
+                    }, [getattr(remoteObject, relationField), self[relationField]])
         
         query = "UPDATE `%(table)s` SET %(values_list)s WHERE `guid` = ?"
         query_format = {
@@ -54,7 +68,7 @@ class EvernoteObject(object):
                 query_params.append(remoteValue)
                 self[i] = remoteValue
         query_format["values_list"] = ", ".join(query_format["values_list"])
-        query_params.append(remoteObject.guid)
+        query_params.append(self["guid"])
         self._db.query(query % query_format, query_params)
     
     def is_new(self):
@@ -67,6 +81,6 @@ class EvernoteObject(object):
     def set_dirty(self, dirty):
         logging.debug("EvernoteObject(%s)::set_dirty:%d" % (self.TABLE, dirty))
         
-        self._db.query("UPDATE `%(table)s` SET dirty = ? WHERE `localId` = ?" % {
+        self._db.query("UPDATE `%(table)s` SET `dirty` = ? WHERE `guid` = ?" % {
             "table": self.TABLE
-        }, [dirty, self["localId"]])
+        }, [dirty, self["guid"]])
