@@ -40,3 +40,6 @@ class Notebook(EvernoteObject):
     
     def __init__(self, client, db, localData = None, remoteObject = None):
         EvernoteObject.__init__(self, client, db, localData, remoteObject)
+    
+    def __repr__(self):
+        return "<Notebook guid=\"%s\" name=\"%s\">" % (self["guid"], self["name"])

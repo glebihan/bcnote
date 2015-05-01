@@ -19,11 +19,13 @@
 # along with BCNote.  If not, see <http://www.gnu.org/licenses/>.
 
 import logging
+from SearchCondition import SearchCondition
 
 class EvernoteObjectList(object):
-    def __init__(self, client, db):
+    def __init__(self, client, db, search_condition = None):
         self._client = client
         self._db = db
+        self._search_condition = search_condition
     
     def _get_instance(self, localData = None, remoteObject = None):
         return self.OBJECT_CLASS(self._client, self._db, localData = localData, remoteObject = remoteObject)
@@ -32,8 +34,13 @@ class EvernoteObjectList(object):
         query = "SELECT * FROM `%(table)s`" % {
             "table": self.OBJECT_CLASS.TABLE
         }
+        if self._search_condition:
+            search_str, query_params = self._search_condition.to_sql()
+            query += " WHERE " + search_str
+        else:
+            query_params = []
         res = []
-        for i in self._db.query(query):
+        for i in self._db.query(query, query_params):
             res.append(self._get_instance(localData = i))
         return iter(res)
     
@@ -93,3 +100,9 @@ class EvernoteObjectList(object):
             res.append(self._get_instance(localData = i))
         
         return res
+    
+    def where(self, *args):
+        if len(args) == 1 and type(args[0]) == SearchCondition:
+            return type(self)(self._client, self._db, args[0])
+        else:
+            return type(self)(self._client, self._db, SearchCondition(*args) & self._search_condition)

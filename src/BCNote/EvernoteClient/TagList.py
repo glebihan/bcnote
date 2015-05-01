@@ -24,5 +24,5 @@ from Tag import Tag
 class TagList(EvernoteObjectList):
     OBJECT_CLASS = Tag
     
-    def __init__(self, client, db):
-        EvernoteObjectList.__init__(self, client, db)
+    def __init__(self, client, db, search_condition = None):
+        EvernoteObjectList.__init__(self, client, db, search_condition)

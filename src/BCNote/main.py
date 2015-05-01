@@ -19,6 +19,7 @@
 # along with BCNote.  If not, see <http://www.gnu.org/licenses/>.
 
 from EvernoteClient import EvernoteClient
+from EvernoteClient.SearchCondition import SearchCondition
 from gi.repository import Gtk
 import logging
 import os

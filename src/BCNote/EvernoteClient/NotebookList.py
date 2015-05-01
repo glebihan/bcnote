@@ -24,5 +24,5 @@ from Notebook import Notebook
 class NotebookList(EvernoteObjectList):
     OBJECT_CLASS = Notebook
     
-    def __init__(self, client, db):
-        EvernoteObjectList.__init__(self, client, db)
+    def __init__(self, client, db, search_condition = None):
+        EvernoteObjectList.__init__(self, client, db, search_condition)
