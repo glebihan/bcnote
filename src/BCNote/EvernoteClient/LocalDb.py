@@ -140,12 +140,3 @@ class LocalDb(object):
         cur.execute(query, [conditions[i] for i in conditions])
         conn.commit()
         conn.close()
-    
-    def cleanup_deleted(self, table, guidList):
-        query = "DELETE FROM `%s` WHERE (`dirty` = 0 OR `updateSequenceNum` != 0) AND `guid` NOT IN (%s)" % (table, ", ".join(["?" for i in guidList]))
-        
-        conn = sqlite3.connect(self._dbFile)
-        cur = conn.cursor()
-        cur.execute(query, guidList)
-        conn.commit()
-        conn.close()
