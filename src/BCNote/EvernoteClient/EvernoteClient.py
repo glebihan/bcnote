@@ -27,20 +27,27 @@ import logging
 import os
 from gi.repository import GLib
 from ..informations import *
+from NotebookList import NotebookList
+from TagList import TagList
+from NoteList import NoteList
 
-DATATYPES_TO_SYNC = ["notebook"]
-SYNC_FIELDS = {
-    "notebook": [
-        "guid",
-        "name",
-        "updateSequenceNum",
-        "defaultNotebook",
-        "serviceCreated",
-        "serviceUpdated",
-        "published",
-        "stack"
-    ]
-}
+DATATYPES_TO_SYNC = [
+    {
+        "clientProperty": "tags",
+        "chunkProperty": "tags",
+        "chunkExpungedProperty": "expungedTags"
+    },
+    {
+        "clientProperty": "notebooks",
+        "chunkProperty": "notebooks",
+        "chunkExpungedProperty": "expungedNotebooks"
+    },
+    {
+        "clientProperty": "notes",
+        "chunkProperty": "notes",
+        "chunkExpungedProperty": "expungedNotes"
+    }
+]
 
 class EvernoteClient(EventsObject):
     def __init__(self, **kwargs):
@@ -67,6 +74,24 @@ class EvernoteClient(EventsObject):
             self._load_user_id()
         
         self._db = LocalDb(os.path.join(self.dataPath, "db.sqlite"), kwargs["upgradeFilesPath"])
+    
+    def _get_notebooks(self):
+        if not hasattr(self, "_notebooks"):
+            self._notebooks = NotebookList(self, self._db)
+        return self._notebooks
+    notebooks = property(_get_notebooks)
+    
+    def _get_tags(self):
+        if not hasattr(self, "_tags"):
+            self._tags = TagList(self, self._db)
+        return self._tags
+    tags = property(_get_tags)
+    
+    def _get_notes(self):
+        if not hasattr(self, "_notes"):
+            self._notes = NoteList(self, self._db)
+        return self._notes
+    notes = property(_get_notes)
     
     def _get_dataPath(self):
         return os.path.join(os.getenv("HOME"), ".local", "share", UNIX_APPNAME, "%d" % self._userId)
@@ -97,25 +122,6 @@ class EvernoteClient(EventsObject):
     
     def _set_global_data(self, key, value):
         self._db.simple_replace("global_data", {"key": key, "value": value})
-        
-    def _store_new_item(self, dataType, item):
-        logging.debug("EvernoteClient::_store_new_item")
-        
-        insertData = {}
-        for i in SYNC_FIELDS[dataType]:
-            insertData[i] = getattr(item, i)
-        self._db.simple_insert(dataType + "s", insertData)
-    
-    def _update_local_item(self, dataType, localItem, remoteItem):
-        logging.debug("EvernoteClient::_update_local_item")
-        
-        updateData = {}
-        for i in SYNC_FIELDS[dataType]:
-            updateData[i] = getattr(remoteItem, i)
-        self._db.simple_update(dataType + "s", updateData, {"localId": localItem["localId"]})
-    
-    def _find_local_match(self, dataType, remoteItem):
-        return self._db.simple_select_one(dataType + "s", {"guid": remoteItem.guid})
     
     @async_method(None)
     def sync(self):
@@ -147,6 +153,8 @@ class EvernoteClient(EventsObject):
                 while continue_fetching:
                     chunkFilter = SyncChunkFilter(
                         includeNotebooks = True,
+                        includeTags = True,
+                        includeNotes = True,
                         includeExpunged = True
                     )
                     chunk = noteStore.getFilteredSyncChunk(afterUSN, 10, chunkFilter)
@@ -157,29 +165,34 @@ class EvernoteClient(EventsObject):
                     chunks.append(chunk)
                 logging.debug("EvernoteAccount::synchronize:chunks = %s" % chunks)
                 
+                # Process updates
                 fullRemoteGUIDList = {}
                 for dataType in DATATYPES_TO_SYNC:
+                    localList = getattr(self, dataType["clientProperty"])
                     for chunk in chunks:
-                        items = getattr(chunk, dataType + "s")
+                        items = getattr(chunk, dataType["chunkProperty"])
                         if items:
                             for remoteItem in items:
-                                localItem = self._find_local_match(dataType, remoteItem)
+                                localItem = localList.find_match(remoteItem)
                                 if localItem:
-                                    self._update_local_item(dataType, localItem, remoteItem)
+                                    localItem.update_from_remote(remoteItem)
                                 else:
-                                    self._store_new_item(dataType, remoteItem)
-                                fullRemoteGUIDList.setdefault(dataType, []).append(remoteItem.guid)
+                                    localList.add_from_remote(remoteItem)
+                                fullRemoteGUIDList.setdefault(dataType["clientProperty"], []).append(remoteItem.guid)
                     
+                    # Process deletions
                     if not fullSync:
-                        expungedData = getattr(chunk, "expunged" + dataType.capitalize() + "s")
+                        expungedData = getattr(chunk, dataType["chunkExpungedProperty"])
                         if expungedData:
                             for expungedItem in expungedData:
-                                self._db.simple_delete(dataType + "s", {"guid": expungedItem})
+                                localList.delete_by_guid(expungedItem)
                 
+                # Process deletions for fullSync mode
                 if fullSync:
                     for dataType in fullRemoteGUIDList:
-                        self._db.cleanup_deleted(dataType + "s", fullRemoteGUIDList[dataType])
+                        getattr(self, dataType).cleanup_deleted(fullRemoteGUIDList[dataType])
                 
+                # Update sync status
                 self._set_global_data("updateCount", syncState.updateCount)
                 self._set_global_data("lastSyncTime", syncState.currentTime)
             

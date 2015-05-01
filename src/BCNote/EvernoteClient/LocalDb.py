@@ -30,6 +30,15 @@ class LocalDb(object):
         self._upgradeFilesPath = upgradeFilesPath
         self._upgrade_db()
     
+    def query(self, *args):
+        conn = self._get_connection()
+        with conn:
+            cur = conn.cursor()
+            cur.execute(*args)
+            res = cur.fetchall()
+        conn.close()
+        return res
+    
     def _get_version(self):
         return int(self.simple_select_one("global_data", {"key": "version"}, {"value": 0})["value"])
     version = property(_get_version)
@@ -67,6 +76,7 @@ class LocalDb(object):
     def _get_connection(self):
         conn = sqlite3.connect(self._dbFile)
         conn.row_factory = sqlite3.Row
+        conn.text_factory = str
         return conn
     
     def simple_select(self, table, conditions = {}):
