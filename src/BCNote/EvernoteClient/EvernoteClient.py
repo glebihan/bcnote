@@ -175,8 +175,13 @@ class EvernoteClient(EventsObject):
                             for remoteItem in items:
                                 localItem = localList.find_match(remoteItem)
                                 if localItem:
+                                    if dataType["clientProperty"] ==  "notes" and remoteItem.contentHash != localItem["contentHash"]:
+                                        print "jdsklqjdskqlkjqd"
+                                        remoteItem.content = noteStore.getNoteContent(remoteItem.guid)
                                     localItem.update_from_remote(remoteItem)
                                 else:
+                                    if dataType["clientProperty"] ==  "notes":
+                                        remoteItem.content = noteStore.getNoteContent(remoteItem.guid)
                                     localList.add_from_remote(remoteItem)
                                 fullRemoteGUIDList.setdefault(dataType["clientProperty"], []).append(remoteItem.guid)
                     

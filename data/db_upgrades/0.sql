@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS `notes` (
     `guid` TEXT,
     `title` TEXT,
     `content` TEXT,
+    `contentHash` TEXT,
     `contentLength` INTEGER,
     `created` INTEGER,
     `updated` INTEGER,

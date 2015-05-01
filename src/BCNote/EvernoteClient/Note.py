@@ -26,6 +26,7 @@ class Note(EvernoteObject):
         "guid",
         "title",
         "content",
+        "contentHash",
         "contentLength",
         "created",
         "updated",

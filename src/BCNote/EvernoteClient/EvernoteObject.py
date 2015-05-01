@@ -27,6 +27,9 @@ class EvernoteObject(object):
         self._localData = localData
         self._remoteObject = remoteObject
     
+    def __getitem__(self, key):
+        return self._localData[key]
+    
     def update_from_remote(self, remoteObject):
         logging.debug("EvernoteObject(%s)::update_from_remote:%s" % (self.TABLE, remoteObject))
         
@@ -37,8 +40,10 @@ class EvernoteObject(object):
         }
         query_params = []
         for i in self.SYNC_FIELDS:
-            query_format["values_list"].append("`%s` = ?" % i)
-            query_params.append(getattr(remoteObject, i))
+            remoteValue = getattr(remoteObject, i)
+            if remoteValue != None:
+                query_format["values_list"].append("`%s` = ?" % i)
+                query_params.append(remoteValue)
         query_format["values_list"] = ", ".join(query_format["values_list"])
         query_params.append(remoteObject.guid)
         self._db.query(query % query_format, query_params)
