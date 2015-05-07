@@ -29,25 +29,25 @@ import logging
 
 if __name__ == "__main__":
     optparser = optparse.OptionParser()
-    optparser.add_option('--dev-token', dest = "dev_token", help = _("Specify dev token (dev)"))
-    optparser.add_option('--db-upgrades-path', dest = "db_upgrades_path", default = "/usr/share/%s/db_upgrades" % UNIX_APPNAME, help = _("Set path to the folder where the DB upgrade files are located (dev)"))
-    optparser.add_option('-d', '--debug-level', dest = "debug_level", default = 1, help = _("Set debug level"), type = int)
+    optparser.add_option('--dev-mode', dest = "devMode", action="store_true", help = _("Development mode"))
+    optparser.add_option('--dev-token', dest = "devToken", help = _("Specify dev token (dev)"))
+    optparser.add_option('-d', '--debug-level', dest = "debugLevel", default = 1, help = _("Set debug level"), type = int)
     options, args = optparser.parse_args()
     
-    if options.debug_level > 4:
-        options.debug_level = 4
-    if options.debug_level < 0:
-        options.debug_level = 0
+    if options.debugLevel > 4:
+        options.debugLevel = 4
+    if options.debugLevel < 0:
+        options.debugLevel = 0
     
-    if options.debug_level == 4:
+    if options.debugLevel == 4:
         logging.getLogger().setLevel(logging.DEBUG)
-    elif options.debug_level == 3:
+    elif options.debugLevel == 3:
         logging.getLogger().setLevel(logging.INFO)
-    elif options.debug_level == 2:
+    elif options.debugLevel == 2:
         logging.getLogger().setLevel(logging.WARNING)
-    elif options.debug_level == 1:
+    elif options.debugLevel == 1:
         logging.getLogger().setLevel(logging.ERROR)
-    elif options.debug_level == 0:
+    elif options.debugLevel == 0:
         logging.getLogger().setLevel(logging.CRITICAL)
         
     Application(options).run()

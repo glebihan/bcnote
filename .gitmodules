@@ -1,0 +1,12 @@
+[submodule "data/ui/tinymce"]
+	path = data/libs/tinymce
+	url = https://github.com/tinymce/tinymce.git
+[submodule "data/libs/jquery"]
+	path = data/libs/jquery
+	url = https://github.com/jquery/jquery.git
+[submodule "data/libs/jqTree"]
+	path = data/libs/jqTree
+	url = https://github.com/mbraak/jqTree.git
+[submodule "data/libs/jquery-ui"]
+	path = data/libs/jquery-ui
+	url = https://github.com/jquery/jquery-ui.git

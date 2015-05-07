@@ -1,0 +1,33 @@
+ul.context_menu{
+    display: block;
+    position: absolute;
+    background-color: #EAEDEF;
+    -webkit-border-radius: 3px;
+    -moz-border-radius: 3px;
+    border-radius: 3px;
+    border: #B3B3B3 solid 2px;
+    list-style: none;
+    padding: 0;
+}
+
+ul.context_menu li{
+    display: block;
+    font-size: 12px;
+}
+
+ul.context_menu li a{
+    padding: 3px;
+    display: block;
+    text-decoration: none;
+    color: black;
+}
+
+ul.context_menu li a:hover{
+    background-color: #D0D0D0;
+}
+
+ul.context_menu li.menu_title{
+    padding: 3px;
+    border-bottom: #B3B3B3 solid 2px;
+    font-style: italic;
+}

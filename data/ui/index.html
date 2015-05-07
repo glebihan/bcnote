@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <script type="text/javascript" src="../libs/jquery/dist/jquery.min.js"></script>
+        <script type="text/javascript" src="../libs/jquery-ui/dist/jquery-ui.js"></script>
+        <script type="text/javascript" src="../libs/jqTree/tree.jquery.js"></script>
+        <script type='text/javascript' src='../libs/tinymce/js/tinymce/tinymce.min.js'></script>
+        <script type='text/javascript' src='EventsObject.js'></script>
+        <script type='text/javascript' src='Connector.js'></script>
+        <script type='text/javascript' src='TagList.js'></script>
+        <script type='text/javascript' src='NoteEditor.js'></script>
+        <script type='text/javascript' src='NoteList.js'></script>
+        <script type='text/javascript' src='NotebookList.js'></script>
+        <script type='text/javascript' src='main.js'></script>
+        <script type='text/javascript' src='context_menus.js'></script>
+        
+        <link rel="stylesheet" type="text/css" href="style.css"/>
+        <link rel="stylesheet" type="text/css" href="context_menus.css"/>
+        <!--<link rel="stylesheet" type="text/css" href="../jquery-ui-custom-theme/jquery-ui-1.10.4.custom.css">-->
+        <link rel="stylesheet" type="text/css" href="../libs/jquery-ui/dist/jquery-ui.css">
+        <link rel="stylesheet" type="text/css" href="jqtree.css"/>
+    </head>
+    <body>
+        <div id="header"></div>
+        
+        <div id="leftbar">
+            <div id="notebookslist_wrapper">
+                <h3>_(Notebooks)</h3>
+                <div id="notebookslist"></div>
+            </div>
+            
+            <div id="tagslist_wrapper">
+                <h3>_(Tags)</h3>
+                <div id="tagslist"></div>
+            </div>
+        </div>
+        
+        <div id="noteslist_wrapper">
+            <div id="searchbox">
+                <span id="searchbox_filters_container">
+                    <span class="searchbox_filter" id="searchbox_notebook_filter"><b>_(Notebook:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_notebook_filter(); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                    <span class="searchbox_filter" id="searchbox_tag_filter"><b>_(Tag:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_tag_filter(); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                    <span class="searchbox_filter" id="searchbox_created_after_filter"><b>_(Created since:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_date_filter('created_after'); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                    <span class="searchbox_filter" id="searchbox_created_before_filter"><b>_(Created before:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_date_filter('created_before'); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                    <span class="searchbox_filter" id="searchbox_modified_after_filter"><b>_(Modified since:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_date_filter('modified_after'); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                    <span class="searchbox_filter" id="searchbox_modified_before_filter"><b>_(Modified before:)</b> <span class='value'></span><a href="#" class="delete" onclick="clear_date_filter('modified_before'); event.stopPropagation(); return false;"><img src="icons/12x12/delete.png"/></a></span>
+                </span>
+                <input id="searchinput"></input>
+                <div id="search_filters">
+                    <h3>_(Contains)</h3>
+                    <div id="search_filters_contains">
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_images"/>
+                            <label for="filter_contains_images">_(Images)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_audio"/>
+                            <label for="filter_contains_audio">_(Audio)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_video"/>
+                            <label for="filter_contains_video">_(Video)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_pdf"/>
+                            <label for="filter_contains_pdf">_(PDF)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_encrypted_text"/>
+                            <label for="filter_contains_encrypted_text">_(Encrypted text)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_ink"/>
+                            <label for="filter_contains_ink">_(Ink)</label>
+                        </span>
+                        <span class="search_filters_contains_item">
+                            <input type="checkbox" id="filter_contains_attachments"/>
+                            <label for="filter_contains_attachments">_(Attachments)</label>
+                        </span>
+                    </div>
+                    
+                    <h3>_(Source)</h3>
+                    <div>
+                    </div>
+                    
+                    <h3>_(Created)</h3>
+                    <div id="search_filters_created">
+                        <label for="filter_created_after">_(Since : )</label><input class="date_input" id="filter_created_after"/>
+                        <br/>
+                        <label for="filter_created_before">_(Before : )</label><input class="date_input" id="filter_created_before"/>
+                    </div>
+                    
+                    <h3>_(Modified)</h3>
+                    <div id="search_filters_modified">
+                        <label for="filter_modified_after">_(Since : )</label><input class="date_input" id="filter_modified_after"/>
+                        <br/>
+                        <label for="filter_modified_before">_(Before : )</label><input class="date_input" id="filter_modified_before"/>
+                    </div>
+                </div>
+            </div>
+            <div id="noteslist"></div>
+            <div id="noteslist_order_wrapper">
+                <a href="#" id="noteslist_order_menu_button" onclick="open_order_by_menu(); event.stopPropagation(); return false;">_(Order by)</a>
+                <ul id="noteslist_order_menu">
+                    <li><a href="#date_created_desc">_(Date created (newest first))</a></li>
+                    <li><a href="#date_created_asc">_(Date created (oldest first))</a></li>
+                    <li><a href="#date_modified_desc">_(Date modified (newest first))</a></li>
+                    <li><a href="#date_modified_asc">_(Date modified (oldest first))</a></li>
+                    <li><a href="#title_asc">_(Title (ascending))</a></li>
+                    <li><a href="#title_desc">_(Title (descending))</a></li>
+                </ul>
+            </div>
+        </div>
+        
+        <div id="noteeditor_wrapper">
+            <div id="noteeditor_inside_wrapper">
+                <div id="noteeditor_toolbar">
+                    <label for="note_notebook_selector">_(Notebook : )</label><select id="note_notebook_selector" onchange="update_note_notebook(this.value);"></select>
+                    <label for="note_tags_selector">_(Tags : )</label><span id="note_tags_list"><input id="note_tags_selector"/></span>
+                </div>
+                <div id="noteeditor_inside_inside_wrapper">
+                    <div id="noteeditor">
+                        <input type='text' id='note_title' value='' style=''/>
+                        <div id='tinymcecontainer'></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

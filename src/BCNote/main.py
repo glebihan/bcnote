@@ -20,23 +20,49 @@
 
 from EvernoteClient import EvernoteClient
 from EvernoteClient.SearchCondition import SearchCondition
+from ui.MainWindow import MainWindow
+from Connector import Connector
 from gi.repository import Gtk
 import logging
 import os
+import sys
+import json
 from informations import *
 
 class Application(object):
-    def __init__(self, cli_options):
-        self.cli_options = cli_options
-        self._evernote_client = EvernoteClient(token = self.cli_options.dev_token, upgradeFilesPath = self.cli_options.db_upgrades_path)
+    def __init__(self, cliOptions):
+        self.cliOptions = cliOptions
         
-        self._evernote_client.connect("sync_complete", self._on_evernote_client_sync_complete)
+        if self.cliOptions.devMode:
+            upgradeFilesPath = os.path.join(os.path.split(os.path.split(sys.argv[0])[0])[0], "data", "db_upgrades")
+            mainUiFile = os.path.realpath(os.path.join(os.path.split(os.path.split(sys.argv[0])[0])[0], "data", "ui", "index.html"))
+        else:
+            upgradeFilesPath = os.path.join("/usr/share", UNIX_APPNAME, "db_upgrades")
+            mainUiFile = os.path.join("/usr/share", UNIX_APPNAME, "ui", "index.html")
+            
+        self.evernoteClient = EvernoteClient(token = self.cliOptions.devToken, upgradeFilesPath = upgradeFilesPath)
+        self.evernoteClient.connect("sync_complete", self._on_evernote_client_sync_complete)
+        
+        self._connector = Connector(self)
+        
+        self._window = MainWindow(self, mainUiFile)
+        self._window.connect("delete_event", lambda w,e: Gtk.main_quit())
     
     def _on_evernote_client_sync_complete(self, client):
         logging.debug("Application::_on_evernote_client_sync_complete")
-        
-        Gtk.main_quit()
     
     def run(self):
-        self._evernote_client.sync()
+        self._window.show_all()
         Gtk.main()
+    
+    def send_connector_command(self, command):
+        self._window.send_connector_command(command)
+    
+    def handle_connector_command(self, message):
+        message_parts = message.split(":")
+        if message_parts and message_parts[0] == "!cmd":
+            method = getattr(self._connector, message_parts[1])
+            method(*json.loads(":".join(message_parts[2:])))
+            return True
+        else:
+            return False
