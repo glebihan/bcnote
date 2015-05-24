@@ -20,7 +20,7 @@
 
 from ..EventsObject import EventsObject
 from ..ThreadWrapper import async_method
-from LocalDb import LocalDb
+from .LocalDb import LocalDb
 import evernote.api.client
 from evernote.edam.notestore.ttypes import NoteFilter, NotesMetadataResultSpec, SyncChunkFilter
 from evernote.edam.type import ttypes as EvernoteTypes
@@ -28,9 +28,9 @@ import logging
 import os
 from gi.repository import GLib
 from ..informations import *
-from NotebookList import NotebookList
-from TagList import TagList
-from NoteList import NoteList
+from .NotebookList import NotebookList
+from .TagList import TagList
+from .NoteList import NoteList
 
 DATATYPES_TO_SYNC = [
     {

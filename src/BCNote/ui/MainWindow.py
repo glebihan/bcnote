@@ -23,9 +23,14 @@ from gi.repository import WebKit
 from ..informations import *
 import urllib
 
-class MainWindow(Gtk.Window):
+class MainWindow(Gtk.ApplicationWindow):
     def __init__(self, application, uiFile):
-        Gtk.Window.__init__(self)
+        Gtk.ApplicationWindow.__init__(self, application = application)
+        self.set_title(APPNAME)
+        
+        self.set_default_size(application.configuration.getint("Display", "window_width"), application.configuration.getint("Display", "window_height"))
+        if application.configuration.getboolean("Display", "window_maximized"):
+            self.maximize()
         
         self._application = application
         self._uiFile = uiFile
@@ -41,10 +46,19 @@ class MainWindow(Gtk.Window):
         sw.add(self._webview)
         
         self._webview.connect("script-alert", self._on_webview_script_alert)
-        
-        self.maximize()
-        
+                
         self._webview.open(urllib.pathname2url(self._uiFile))
+        
+        self.connect("size-allocate", self._on_size_allocate)
+    
+    def _on_size_allocate(self, window, rectangle):
+        if self.is_maximized():
+            self._application.configuration.set("Display", "window_maximized", "true")
+        else:
+            self._application.configuration.set("Display", "window_maximized", "false")
+            width, height = self.get_size()
+            self._application.configuration.set("Display", "window_width", str(width))
+            self._application.configuration.set("Display", "window_height", str(height))
     
     def _on_webview_script_alert(self, webview, frame, message):
         return self._application.handle_connector_command(message)

@@ -19,7 +19,7 @@
 # along with BCNote.  If not, see <http://www.gnu.org/licenses/>.
 
 import json
-from ThreadWrapper import async_method
+from .ThreadWrapper import async_method
 
 class Connector(object):
     def __init__(self, application):
@@ -86,7 +86,7 @@ class Connector(object):
                     "name": t["name"]
                 })
         tagsData.sort(self._compare_tags)
-        print tagsData
+        print(tagsData)
         return tagsData
     
     def _compare_tags(self, a, b):
@@ -105,7 +105,7 @@ class Connector(object):
                 return cmp(a['name'].lower(), b['name'].lower())
     
     def _on_search_notes_complete(self, notesData):
-        print notesData
+        print(notesData)
     
     @async_method(_on_search_notes_complete)
     def update_search(self, params):
